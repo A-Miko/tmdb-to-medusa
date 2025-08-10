@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/.venv
+      - /app/__pycache__
+      - /app/.pytest_cache
+      - /app/.mypy_cache
+    env_file: .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONPATH=/app
+      - PYTHONFAULTHANDLER=1
+      - PYTHONHASHSEED=random
+      - PIP_NO_CACHE_DIR=1
+      - PIP_DISABLE_PIP_VERSION_CHECK=1
+      - PIP_DEFAULT_TIMEOUT=100
+      - PYTEST_ADDOPTS=-v --cov=./ --cov-report=term-missing
+      - WATCHFILES_FORCE_POLLING=true  # For better file watching in Docker
+    working_dir: /app
+    tty: true
+    stdin_open: true
+    ports:
+      - "8000:8000"  # For web interface if using uvicorn
+      - "5678:5678"  # For debugger
+    command: watchmedo auto-restart --directory=./ --pattern="*.py" --recursive -- python -m uvicorn --reload --host 0.0.0.0 --port 8000 tmdb_to_medusa:app
+    networks:
+      - medusa_network
+
+  # Uncomment and configure if you need a database
+  # db:
+  #   image: postgres:13
+  #   environment:
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: tmdb_medusa
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data/
+  #   networks:
+  #     - medusa_network
+
+  # Uncomment if you want to include Medusa in the same compose
+  # medusa:
+  #   image: lscr.io/linuxserver/medusa:latest
+  #   container_name: medusa
+  #   environment:
+  #     - PUID=1000
+  #     - PGID=1000
+  #     - TZ=Europe/London
+  #   volumes:
+  #     - ./medusa/config:/config
+  #     - /path/to/tvshows:/tv
+  #     - /path/to/downloads:/downloads
+  #   ports:
+  #     - 8081:8081
+  #   networks:
+  #     - medusa_network
+
+networks:
+  medusa_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

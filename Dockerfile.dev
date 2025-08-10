@@ -1,0 +1,43 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    git \
+    curl \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+# Install development tools and hot-reloading dependencies
+RUN pip install --no-cache-dir \
+    black \
+    isort \
+    flake8 \
+    mypy \
+    pytest \
+    pytest-cov \
+    ipython \
+    ipdb \
+    watchdog \
+    uvicorn \
+    watchfiles \
+    debugpy
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/.cache
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+# Default command (can be overridden in docker-compose)
+CMD ["bash"]
